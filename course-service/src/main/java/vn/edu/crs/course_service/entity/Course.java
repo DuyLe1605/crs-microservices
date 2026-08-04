@@ -1,6 +1,3 @@
-// path: course-service/src/main/java/vn/edu/crs/course_service/entity/Course.java
-// purpose: entity anh xa bang course trong database course_db
-
 package vn.edu.crs.course_service.entity;
 
 import jakarta.persistence.*;
