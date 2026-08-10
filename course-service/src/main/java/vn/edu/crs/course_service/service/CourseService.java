@@ -5,7 +5,10 @@ import vn.edu.crs.course_service.dto.CourseDTO;
 import vn.edu.crs.course_service.entity.Course;
 import vn.edu.crs.course_service.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -38,7 +41,6 @@ public class CourseService {
         course.setTenMonHoc(dto.getTenMonHoc());
         course.setSoTinChi(dto.getSoTinChi());
         course.setSoChoToiDa(dto.getSoChoToiDa());
-        // Quy tắc nghiệp vụ: khi tạo mới, số chỗ còn lại luôn bằng số chỗ tối đa
         course.setSoChoConLai(dto.getSoChoToiDa());
         return toDTO(courseRepository.save(course));
     }
@@ -49,8 +51,6 @@ public class CourseService {
         course.setTenMonHoc(dto.getTenMonHoc());
         course.setSoTinChi(dto.getSoTinChi());
         course.setSoChoToiDa(dto.getSoChoToiDa());
-        // Không cho sửa trực tiếp soChoConLai qua API update thông thường
-        // (soChoConLai chỉ được thay đổi qua reserve-seat/release-seat ở Buổi 3)
         return toDTO(courseRepository.save(course));
     }
 
@@ -59,6 +59,34 @@ public class CourseService {
             throw new NoSuchElementException("Không tìm thấy môn học id = " + id);
         }
         courseRepository.deleteById(id);
+    }
+
+    public Page<CourseDTO> search(String keyword, Pageable pageable) {
+        Page<Course> page = (keyword == null || keyword.isBlank())
+                ? courseRepository.findAll(pageable)
+                : courseRepository.findByTenMonHocContainingIgnoreCase(keyword, pageable);
+        return page.map(this::toDTO);
+    }
+
+    @Transactional
+    public CourseDTO reserveSeat(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy môn học id = " + courseId));
+        if (course.getSoChoConLai() <= 0) {
+            throw new IllegalStateException("Môn học đã hết chỗ, không thể đăng ký");
+        }
+        course.setSoChoConLai(course.getSoChoConLai() - 1);
+        return toDTO(courseRepository.save(course));
+    }
+
+    @Transactional
+    public CourseDTO releaseSeat(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy môn học id = " + courseId));
+        if (course.getSoChoConLai() < course.getSoChoToiDa()) {
+            course.setSoChoConLai(course.getSoChoConLai() + 1);
+        }
+        return toDTO(courseRepository.save(course));
     }
 
     private CourseDTO toDTO(Course course) {
@@ -71,3 +99,4 @@ public class CourseService {
         );
     }
 }
+
