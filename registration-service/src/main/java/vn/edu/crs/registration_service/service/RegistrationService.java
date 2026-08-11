@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,9 +22,19 @@ public class RegistrationService {
     private final CourseClient courseClient;
 
     public Registration register(RegistrationRequestDTO dto) {
-        if (registrationRepository.existsByStudentIdAndCourseIdAndTrangThai(
-                dto.getStudentId(), dto.getCourseId(), DA_DANG_KY)) {
-            throw new IllegalStateException("Sinh viên đã đăng ký môn học này rồi");
+        Optional<Registration> existingOpt = registrationRepository
+                .findByStudentIdAndCourseId(dto.getStudentId(), dto.getCourseId());
+
+        if (existingOpt.isPresent()) {
+            Registration existing = existingOpt.get();
+            if (DA_DANG_KY.equals(existing.getTrangThai())) {
+                throw new IllegalStateException("Sinh viên đã đăng ký môn học này rồi");
+            }
+
+            courseClient.reserveSeat(dto.getCourseId());
+            existing.setTrangThai(DA_DANG_KY);
+            existing.setNgayDangKy(LocalDateTime.now());
+            return registrationRepository.save(existing);
         }
 
         courseClient.reserveSeat(dto.getCourseId());
