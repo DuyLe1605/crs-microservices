@@ -21,6 +21,10 @@ public class ApiKeyFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
+        if (org.springframework.web.cors.reactive.CorsUtils.isPreFlightRequest(request)) {
+            return chain.filter(exchange);
+        }
+
         if (!path.startsWith("/api/public/courses")) {
             return chain.filter(exchange);
         }

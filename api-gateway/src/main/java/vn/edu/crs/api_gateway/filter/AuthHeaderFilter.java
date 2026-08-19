@@ -24,6 +24,10 @@ public class AuthHeaderFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
+        if (org.springframework.web.cors.reactive.CorsUtils.isPreFlightRequest(request)) {
+            return chain.filter(exchange);
+        }
+
         boolean isOpen = OPEN_PATHS.stream().anyMatch(path::startsWith);
 
         boolean isPublicCourseRead = path.startsWith("/api/courses")
