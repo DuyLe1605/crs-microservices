@@ -21,7 +21,13 @@ public class RegistrationController {
         return registrationService.register(dto);
     }
 
+    @GetMapping("/student/{studentId}")
+    public java.util.List<Registration> getByStudentId(@PathVariable Long studentId) {
+        return registrationService.getByStudentId(studentId);
+    }
+
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(@PathVariable Long id) {
         registrationService.cancel(id);
     }

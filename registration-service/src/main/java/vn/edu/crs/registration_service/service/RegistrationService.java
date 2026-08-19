@@ -61,4 +61,8 @@ public class RegistrationService {
         registration.setTrangThai(DA_HUY);
         registrationRepository.save(registration);
     }
+
+    public java.util.List<Registration> getByStudentId(Long studentId) {
+        return registrationRepository.findByStudentId(studentId);
+    }
 }
